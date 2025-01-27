@@ -2,7 +2,7 @@ export default {
   onload: ({ extensionAPI }) => {
     extensionAPI.ui.commandPalette.addCommand({
       label: "Open AI Chat (Block UID)",
-      callback: () => openAIChatWithBlock("kYzHSG1X8"),
+      callback: () => openAIChatWithBlock("_ubyVF60r"),
     });
   },
   onunload: () => {},
