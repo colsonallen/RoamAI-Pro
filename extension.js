@@ -1,83 +1,100 @@
 export default {
   onload: ({ extensionAPI }) => {
-    // Add a Roam command to open the chat window in the right sidebar
+    // Add a command to the Roam command palette
     extensionAPI.ui.commandPalette.addCommand({
-      label: "Open Claude Chat",
-      callback: () => openClaudeChat(),
+      label: "Open AI Chat (Blueprint)",
+      callback: () => openAIChatPanel(),
     });
   },
   onunload: () => {
-    // If you ever need to remove cleanup, do it here
+    // If we created any DOM elements or intervals, clean them here
   },
 };
 
-function openClaudeChat() {
-  // Creates a new panel in Roam's right sidebar
-  const panel = document.createElement("div");
-  panel.classList.add("chat-container");
-
-  // (Optional) Add a header
-  const header = document.createElement("div");
-  header.classList.add("chat-header");
-  header.textContent = "Claude Chat Window";
-  panel.appendChild(header);
-
-  // Chat messages area
-  const messagesDiv = document.createElement("div");
-  messagesDiv.classList.add("chat-messages");
-  panel.appendChild(messagesDiv);
-
-  // Input box
-  const input = document.createElement("textarea");
-  input.classList.add("chat-input");
-  input.placeholder = "Type your prompt...";
-  panel.appendChild(input);
-
-  // Send button
-  const sendBtn = document.createElement("button");
-  sendBtn.textContent = "Send to Claude";
-  sendBtn.onclick = async () => {
-    const userInput = input.value.trim();
-    if (!userInput) return;
-
-    // Display the user message
-    const userMsg = document.createElement("div");
-    userMsg.textContent = `You: ${userInput}`;
-    messagesDiv.appendChild(userMsg);
-
-    // Clear input field
-    input.value = "";
-
-    // Example: call local MCP server - adapt to your actual code
-    try {
-      // Placeholder fetch - adjust to your local server or `use_mcp_tool` approach
-      // Here, you'd do something like:
-      //    fetch("http://localhost:YOUR_PORT", { method: "POST", body: JSON.stringify(...) })
-      // Or integrate your actual logic for sending the prompt to Claude.
-      // For now, we'll just pretend we got a dummy response:
-      const claudeResponse = "Hello from Claude! (Dummy response)";
-
-      // Display Claude's response
-      const claudeMsg = document.createElement("div");
-      claudeMsg.textContent = `Claude: ${claudeResponse}`;
-      messagesDiv.appendChild(claudeMsg);
-
-      // Scroll messagesDiv to bottom
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    } catch (err) {
-      console.error("Error sending message:", err);
-    }
-  };
-  panel.appendChild(sendBtn);
-
-  // Insert panel into sidebar
+function openAIChatPanel() {
+  // Attempt to open an "extension" type window in the right sidebar
   window.roamAlphaAPI.ui.rightSidebar.addWindow({
     window: {
       type: "extension",
-      id: "claude-chat",
+      id: "ac-ai-chat",
       render: (el) => {
-        el.appendChild(panel);
+        // We'll render our UI directly into `el`
+        renderChatUI(el);
       },
     },
   });
+}
+
+function renderChatUI(containerEl) {
+  // Clear anything previously rendered
+  containerEl.innerHTML = "";
+
+  // Apply Blueprint or custom classes. We'll nest everything in a 'bp3-card'.
+  const wrapper = document.createElement("div");
+  wrapper.classList.add("bp3-card", "ac-chat-wrapper");
+  wrapper.style.margin = "8px"; // optional inline style
+
+  // Title
+  const titleEl = document.createElement("h3");
+  titleEl.classList.add("bp3-heading");
+  titleEl.textContent = "Claude Chat";
+  wrapper.appendChild(titleEl);
+
+  // Messages area (scrollable)
+  const messagesEl = document.createElement("div");
+  messagesEl.classList.add("ac-chat-messages", "bp3-running-text");
+  messagesEl.style.height = "200px";
+  messagesEl.style.overflowY = "auto";
+  messagesEl.style.border = "1px solid #ccc";
+  messagesEl.style.padding = "8px";
+  messagesEl.style.marginBottom = "8px";
+  wrapper.appendChild(messagesEl);
+
+  // Input (Blueprint text area)
+  const inputEl = document.createElement("textarea");
+  inputEl.classList.add("bp3-input");
+  inputEl.setAttribute("rows", "3");
+  inputEl.placeholder = "Type your prompt...";
+  wrapper.appendChild(inputEl);
+
+  // Send button
+  const sendBtn = document.createElement("button");
+  sendBtn.classList.add("bp3-button", "bp3-intent-primary", "ac-chat-send-button");
+  sendBtn.style.marginTop = "8px";
+  sendBtn.textContent = "Send to Claude";
+  sendBtn.onclick = async () => {
+    const userText = inputEl.value.trim();
+    if (!userText) return;
+
+    // Display user text
+    const userMsg = document.createElement("div");
+    userMsg.textContent = `You: ${userText}`;
+    messagesEl.appendChild(userMsg);
+
+    // Clear input
+    inputEl.value = "";
+
+    // Here is where you'd do your MCP call to Claude
+    // For example, a fetch request to your local Claude server:
+    let claudeReply = "Dummy response. Replace with real Claude call!";
+    try {
+      // Example only:
+      // const response = await fetch("http://localhost:3333/claude", { ... });
+      // claudeReply = await response.text();
+    } catch (err) {
+      console.error("Claude request failed:", err);
+      claudeReply = "Error contacting Claude.";
+    }
+
+    // Display Claude reply
+    const claudeMsg = document.createElement("div");
+    claudeMsg.textContent = `Claude: ${claudeReply}`;
+    messagesEl.appendChild(claudeMsg);
+
+    // Auto-scroll messages to bottom
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  };
+  wrapper.appendChild(sendBtn);
+
+  containerEl.appendChild(wrapper);
 }
