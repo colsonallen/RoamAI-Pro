@@ -1,100 +1,91 @@
 export default {
   onload: ({ extensionAPI }) => {
-    // Add a command to the Roam command palette
     extensionAPI.ui.commandPalette.addCommand({
-      label: "Open AI Chat (Blueprint)",
-      callback: () => openAIChatPanel(),
+      label: "Open AI Chat (Block UID)",
+      callback: () => openAIChatWithBlock("MY_BLOCK_UID"),
     });
   },
-  onunload: () => {
-    // If we created any DOM elements or intervals, clean them here
-  },
+  onunload: () => {},
 };
 
-function openAIChatPanel() {
-  // Attempt to open an "extension" type window in the right sidebar
+/**
+ * Opens a right sidebar window pinned to the block with `block-uid`,
+ * then injects a custom chat UI into that sidebar DOM element.
+ */
+function openAIChatWithBlock(blockUid) {
+  // 1. Tell Roam to open the block in the right sidebar
   window.roamAlphaAPI.ui.rightSidebar.addWindow({
     window: {
-      type: "extension",
-      id: "ac-ai-chat",
-      render: (el) => {
-        // We'll render our UI directly into `el`
-        renderChatUI(el);
-      },
+      type: "block",
+      "block-uid": blockUid,
     },
   });
-}
 
-function renderChatUI(containerEl) {
-  // Clear anything previously rendered
-  containerEl.innerHTML = "";
-
-  // Apply Blueprint or custom classes. We'll nest everything in a 'bp3-card'.
-  const wrapper = document.createElement("div");
-  wrapper.classList.add("bp3-card", "ac-chat-wrapper");
-  wrapper.style.margin = "8px"; // optional inline style
-
-  // Title
-  const titleEl = document.createElement("h3");
-  titleEl.classList.add("bp3-heading");
-  titleEl.textContent = "Claude Chat";
-  wrapper.appendChild(titleEl);
-
-  // Messages area (scrollable)
-  const messagesEl = document.createElement("div");
-  messagesEl.classList.add("ac-chat-messages", "bp3-running-text");
-  messagesEl.style.height = "200px";
-  messagesEl.style.overflowY = "auto";
-  messagesEl.style.border = "1px solid #ccc";
-  messagesEl.style.padding = "8px";
-  messagesEl.style.marginBottom = "8px";
-  wrapper.appendChild(messagesEl);
-
-  // Input (Blueprint text area)
-  const inputEl = document.createElement("textarea");
-  inputEl.classList.add("bp3-input");
-  inputEl.setAttribute("rows", "3");
-  inputEl.placeholder = "Type your prompt...";
-  wrapper.appendChild(inputEl);
-
-  // Send button
-  const sendBtn = document.createElement("button");
-  sendBtn.classList.add("bp3-button", "bp3-intent-primary", "ac-chat-send-button");
-  sendBtn.style.marginTop = "8px";
-  sendBtn.textContent = "Send to Claude";
-  sendBtn.onclick = async () => {
-    const userText = inputEl.value.trim();
-    if (!userText) return;
-
-    // Display user text
-    const userMsg = document.createElement("div");
-    userMsg.textContent = `You: ${userText}`;
-    messagesEl.appendChild(userMsg);
-
-    // Clear input
-    inputEl.value = "";
-
-    // Here is where you'd do your MCP call to Claude
-    // For example, a fetch request to your local Claude server:
-    let claudeReply = "Dummy response. Replace with real Claude call!";
-    try {
-      // Example only:
-      // const response = await fetch("http://localhost:3333/claude", { ... });
-      // claudeReply = await response.text();
-    } catch (err) {
-      console.error("Claude request failed:", err);
-      claudeReply = "Error contacting Claude.";
+  // 2. Wait a short moment for the sidebar DOM to appear
+  setTimeout(() => {
+    // The side window's DOM usually has `sidewindowkey="block:MY_BLOCK_UID"`
+    const sideWindow = document.querySelector(`div[sidewindowkey^="${blockUid}"]`);
+    if (!sideWindow) {
+      console.error("Could not find the side window DOM for block:", blockUid);
+      return;
     }
 
-    // Display Claude reply
-    const claudeMsg = document.createElement("div");
-    claudeMsg.textContent = `Claude: ${claudeReply}`;
-    messagesEl.appendChild(claudeMsg);
+    // Clear any existing content from that sidebar area
+    sideWindow.innerHTML = "";
 
-    // Auto-scroll messages to bottom
-    messagesEl.scrollTop = messagesEl.scrollHeight;
-  };
-  wrapper.appendChild(sendBtn);
+    // 3. Insert your chat UI
+    const wrapper = document.createElement("div");
+    wrapper.style.padding = "8px";
 
-  containerEl.appendChild(wrapper);
+    // Title
+    const titleEl = document.createElement("h3");
+    titleEl.textContent = "Claude Chat";
+    wrapper.appendChild(titleEl);
+
+    // Message area
+    const messagesEl = document.createElement("div");
+    messagesEl.style.height = "200px";
+    messagesEl.style.overflowY = "auto";
+    messagesEl.style.border = "1px solid #ccc";
+    messagesEl.style.marginBottom = "8px";
+    wrapper.appendChild(messagesEl);
+
+    // Input
+    const inputEl = document.createElement("textarea");
+    inputEl.placeholder = "Type your message...";
+    inputEl.rows = 2;
+    inputEl.style.width = "100%";
+    wrapper.appendChild(inputEl);
+
+    // Send Button
+    const sendBtn = document.createElement("button");
+    sendBtn.textContent = "Send";
+    sendBtn.style.display = "block";
+    sendBtn.style.marginTop = "8px";
+    sendBtn.onclick = async () => {
+      const text = inputEl.value.trim();
+      if (!text) return;
+
+      // Append user text
+      const userMsg = document.createElement("div");
+      userMsg.textContent = `You: ${text}`;
+      messagesEl.appendChild(userMsg);
+
+      inputEl.value = "";
+
+      // TODO: Make real call to Claude. For now, pretend we got a response:
+      let claudeReply = "Hello! (Dummy response)";
+      // e.g. fetch("http://localhost:3333/claude", { method: "POST", body: ... })
+
+      // Show response
+      const claudeMsg = document.createElement("div");
+      claudeMsg.textContent = `Claude: ${claudeReply}`;
+      messagesEl.appendChild(claudeMsg);
+
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    };
+    wrapper.appendChild(sendBtn);
+
+    sideWindow.appendChild(wrapper);
+  }, 300);
 }
