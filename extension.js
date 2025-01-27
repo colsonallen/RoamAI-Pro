@@ -2,7 +2,7 @@ export default {
   onload: ({ extensionAPI }) => {
     extensionAPI.ui.commandPalette.addCommand({
       label: "Open AI Chat (Block UID)",
-      callback: () => openAIChatWithBlock("https://roamresearch.com/#/app/Bradley_Parsons/page/kYzHSG1X8"),
+      callback: () => openAIChatWithBlock("kYzHSG1X8"),
     });
   },
   onunload: () => {},
